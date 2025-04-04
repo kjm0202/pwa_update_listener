@@ -1,4 +1,6 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import 'package:flutter/material.dart';
 import 'package:pwa_update_listener/src/base_update_listener.dart';
@@ -20,7 +22,7 @@ const _visibleState = 'visible';
 
 /// A helper function to reload your PWA
 void reloadPwa() {
-  html.window.location.reload();
+  web.window.location.reload();
 }
 
 /// This widget is used to detect if a new version of PWA is ready so that
@@ -58,11 +60,11 @@ class _PwaUpdateListenerState extends State<PwaUpdateListener> {
   double _visibility = 1;
 
   /// The serviceWorker registration
-  html.ServiceWorkerRegistration? _serviceWorkerRegistration;
+  web.ServiceWorkerRegistration? _serviceWorkerRegistration;
 
   /// Check if app is in the fore/background
-  void _visibilityChangeListener(html.Event event) {
-    final visibilityState = html.window.document.visibilityState;
+  void _visibilityChangeListener(web.Event event) {
+    final visibilityState = web.window.document.visibilityState;
     if (visibilityState == _visibleState) {
       /// App became foreground
       _serviceWorkerRegistration?.update();
@@ -72,18 +74,20 @@ class _PwaUpdateListenerState extends State<PwaUpdateListener> {
   /// Get the current service worker and register eventListener
   Future<void> _registerServiceWorker() async {
     _serviceWorkerRegistration =
-        await html.window.navigator.serviceWorker?.getRegistration();
+        await web.window.navigator.serviceWorker.getRegistration().toDart;
 
-    _serviceWorkerRegistration?.addEventListener(_updateFoundEvent, (event) {
-      _serviceWorkerRegistration?.installing?.addEventListener(
-        _stateChangeEvent,
-        (event) {
-          if (_serviceWorkerRegistration?.waiting != null) {
-            widget.onReady();
-          }
-        },
-      );
-    });
+    _serviceWorkerRegistration?.addEventListener(
+        _updateFoundEvent,
+        (web.Event event) {
+          _serviceWorkerRegistration?.installing?.addEventListener(
+            _stateChangeEvent,
+            (web.Event event) {
+              if (_serviceWorkerRegistration?.waiting != null) {
+                widget.onReady();
+              }
+            }.toJS,
+          );
+        }.toJS);
   }
 
   @override
@@ -92,15 +96,15 @@ class _PwaUpdateListenerState extends State<PwaUpdateListener> {
 
     _registerServiceWorker();
 
-    html.window
-        .addEventListener(_visibilityChangeEvent, _visibilityChangeListener);
+    web.window.addEventListener(
+        _visibilityChangeEvent, _visibilityChangeListener.toJS);
   }
 
   @override
   void dispose() {
-    html.window.removeEventListener(
+    web.window.removeEventListener(
       _visibilityChangeEvent,
-      _visibilityChangeListener,
+      _visibilityChangeListener.toJS,
     );
     super.dispose();
   }
